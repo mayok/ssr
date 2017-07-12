@@ -79,44 +79,21 @@ def mfcc(signal, nfft, fs, nceps):
     # 振幅スペクトルを求める
     spec = np.abs(np.fft.fft(signal, nfft))[:nfft/2]
     fscale = np.fft.fftfreq(nfft, d = 1.0 / fs)[:nfft/2]
-#    plot(fscale, spec)
-#    xlabel("frequency [Hz]")
-#    ylabel("amplitude spectrum")
-#    savefig("spectrum.png")
-#    show()
 
     # メルフィルタバンクを作成
     numChannels = 20  # メルフィルタバンクのチャネル数
     df = fs / nfft   # 周波数解像度（周波数インデックス1あたりのHz幅）
     filterbank, fcenters = melFilterBank(fs, nfft, numChannels)
-#    for c in np.arange(0, numChannels):
-#        plot(np.arange(0, nfft / 2) * df, filterbank[c])
-#    savefig("melfilterbank.png")
-#    show()
 
-    # 定義通りに書いた場合
-    # 振幅スペクトルに対してフィルタバンクの各フィルタをかけ、振幅の和の対数をとる
-#    mspec = []
-#    for c in np.arange(0, numChannels):
-#        mspec.append(np.log10(sum(spec * filterbank[c])))
-#    mspec = np.array(mspec)
-
-    # 行列で書くと簡単になる！
     # 振幅スペクトルにメルフィルタバンクを適用
     mspec = np.log10(np.dot(spec, filterbank.T))
 
-    # 元の振幅スペクトルとフィルタバンクをかけて圧縮したスペクトルを表示
-#    subplot(211)
-#    plot(fscale, np.log10(spec))
-#    xlabel("frequency")
-#    xlim(0, 25000)
-#
-#    subplot(212)
-#    plot(fcenters, mspec, "o-")
-#    xlabel("frequency")
-#    xlim(0, 25000)
-#    savefig("result_melfilter.png")
-#    show()
+    # 波形の確認のため
+    subplot(211)
+    plot(fcenters, mspec, "o-")
+    xlabel("frequency")
+    xlim(0, 25000)
+    show()
 
     # 離散コサイン変換
     ceps = scipy.fftpack.realtransforms.dct(mspec, type=2, norm="ortho", axis=-1)
@@ -132,9 +109,12 @@ if __name__ == "__main__":
     # 音声波形の中心部分を切り出す
     center = len(wav) / 2  # 中心のサンプル番号
     cuttime = 0.04         # 切り出す長さ [s]
-    wavdata = wav[int(center - cuttime/2*fs) : int(center + cuttime/2*fs)]
 
     nfft = 2048  # FFTのサンプル数
     nceps = 12   # MFCCの次元数
-    ceps = mfcc(wavdata, nfft, fs, nceps)
-    print ceps
+
+    # 1つの音声から 5つの mfcc を抽出する
+    for i in np.arange(0.04, -0.06, -0.02):
+        wavdata = wav[int(center - (cuttime + i)/2*fs) : int(center + (cuttime - i)/2*fs)]
+        ceps = mfcc(wavdata, nfft, fs, nceps)
+        print ceps
