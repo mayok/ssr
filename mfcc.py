@@ -1,5 +1,6 @@
 #coding:utf-8
 import wave
+import sys
 import numpy as np
 import scipy.signal
 import scipy.fftpack
@@ -125,7 +126,7 @@ def mfcc(signal, nfft, fs, nceps):
 
 if __name__ == "__main__":
     # 音声をロード
-    wav, fs = wavread("a.wav")
+    wav, fs = wavread(sys.argv[1])
     t = np.arange(0.0, len(wav) / fs, 1/fs)
 
     # 音声波形の中心部分を切り出す
