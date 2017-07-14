@@ -1,4 +1,5 @@
 #coding:utf-8
+from __future__ import print_function
 import wave
 import sys
 import numpy as np
@@ -89,11 +90,11 @@ def mfcc(signal, nfft, fs, nceps):
     mspec = np.log10(np.dot(spec, filterbank.T))
 
     # 波形の確認のため
-    subplot(211)
-    plot(fcenters, mspec, "o-")
-    xlabel("frequency")
-    xlim(0, 25000)
-    show()
+    # subplot(211)
+    # plot(fcenters, mspec, "o-")
+    # xlabel("frequency")
+    # xlim(0, 25000)
+    # show()
 
     # 離散コサイン変換
     ceps = scipy.fftpack.realtransforms.dct(mspec, type=2, norm="ortho", axis=-1)
@@ -117,4 +118,11 @@ if __name__ == "__main__":
     for i in np.arange(0.04, -0.06, -0.02):
         wavdata = wav[int(center - (cuttime + i)/2*fs) : int(center + (cuttime - i)/2*fs)]
         ceps = mfcc(wavdata, nfft, fs, nceps)
-        print ceps
+
+        #
+        # print(repr(ceps))
+
+        # generate data
+        for cep in ceps:
+            print(cep, " ", end="")
+        print()

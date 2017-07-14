@@ -7,6 +7,7 @@ from pylab import *
 """
 
 K = 2  # 混合ガウス分布の数（固定）
+D = 12 # 次元数
 
 def scale(X):
     """データ行列Xを属性ごとに標準化したデータを返す"""
@@ -42,18 +43,18 @@ def likelihood(X, mean, cov, pi):
 
 if __name__ == "__main__":
     # 訓練データをロード
-    data = np.genfromtxt("faithful.txt")
-    X = data[:, 0:2]
+    data = np.genfromtxt("train-data.mfcc")
+    X = data[:, 0:D]
     X = scale(X)  # データを標準化（各次元が平均0、分散1になるように）
     N = len(X)    # データ数
 
     # 訓練データから混合ガウス分布のパラメータをEMアルゴリズムで推定する
 
     # 平均、分散、混合係数を初期化
-    mean = np.random.rand(K, 2)
-    cov = zeros( (K, 2, 2) )
+    mean = np.random.rand(K, D)
+    cov = zeros( (K, D, D) )
     for k in range(K):
-        cov[k] = [[1.0, 0.0], [0.0, 1.0]]
+        np.fill_diagonal(cov[k], 1.0)
     pi = np.random.rand(K)
 
     # 負担率の空配列を用意
@@ -84,16 +85,18 @@ if __name__ == "__main__":
                 Nk += gamma[n][k]
 
             # 平均を再計算
-            mean[k] = array([0.0, 0.0])
+            mean[k] = np.zeros( D )
             for n in range(N):
                 mean[k] += gamma[n][k] * X[n]
             mean[k] /= Nk
 
             # 共分散を再計算
-            cov[k] = array([[0.0,0.0], [0.0,0.0]])
+            # x の各成分は独立であるとみなし，対角行列化を行う
+            cov[k] = np.zeros( (D, D) )
             for n in range(N):
                 temp = X[n] - mean[k]
-                cov[k] += gamma[n][k] * matrix(temp).reshape(2, 1) * matrix(temp).reshape(1, 2)  # 縦ベクトルx横ベクトル
+                cov[k] += gamma[n][k] * matrix(temp).reshape(D, 1) * matrix(temp).reshape(1, D)
+            cov[k] = np.diag(np.diag(cov[k]))
             cov[k] /= Nk
 
             # 混合係数を再計算
@@ -107,21 +110,27 @@ if __name__ == "__main__":
         like = new_like
         turn += 1
 
-    # ガウス分布の平均を描画
-    for k in range(K):
-        scatter(mean[k, 0], mean[k, 1], c='r', marker='o')
+    # # ガウス分布の平均を描画
+    # for k in range(K):
+    #     scatter(mean[k, 0], mean[k, 1], c='r', marker='o')
+    #
+    # # 等高線を描画
+    # xlist = np.linspace(-2.5, 2.5, 50)
+    # ylist = np.linspace(-2.5, 2.5, 50)
+    # x, y = np.meshgrid(xlist, ylist)
+    # for k in range(K):
+    #     z = bivariate_normal(x, y, np.sqrt(cov[k,0,0]), np.sqrt(cov[k,1,1]), mean[k,0], mean[k,1], cov[k,0,1])
+    #     cs = contour(x, y, z, 3, colors='k', linewidths=1)
+    #
+    # # 訓練データを描画
+    # # XXX: 2次元だけ表示してない
+    # plot(X[:,0], X[:,1], 'gx')
+    #
+    # xlim(-2.5, 2.5)
+    # ylim(-2.5, 2.5)
+    # show()
 
-    # 等高線を描画
-    xlist = np.linspace(-2.5, 2.5, 50)
-    ylist = np.linspace(-2.5, 2.5, 50)
-    x, y = np.meshgrid(xlist, ylist)
-    for k in range(K):
-        z = bivariate_normal(x, y, np.sqrt(cov[k,0,0]), np.sqrt(cov[k,1,1]), mean[k,0], mean[k,1], cov[k,0,1])
-        cs = contour(x, y, z, 3, colors='k', linewidths=1)
-
-    # 訓練データを描画
-    plot(X[:,0], X[:,1], 'gx')
-
-    xlim(-2.5, 2.5)
-    ylim(-2.5, 2.5)
-    show()
+    # print "mu = "
+    print "mu = np.", repr(mean)
+    print "sigma = np.", repr(cov)
+    print "pi = np.", repr(pi)
