@@ -1,12 +1,13 @@
 #coding:utf-8
 import numpy as np
 from pylab import *
+import sys
 
 """
 混合ガウス分布のEMアルゴリズム
 """
 
-K = 2  # 混合ガウス分布の数（固定）
+K = 6  # 混合ガウス分布の数（固定）
 D = 12 # 次元数
 
 def scale(X):
@@ -27,8 +28,8 @@ def scale(X):
 def gaussian(x, mean, cov):
     """多変量ガウス関数"""
     temp1 = 1 / ((2 * np.pi) ** (x.size/2.0))
-    temp2 = 1 / (np.linalg.det(cov) ** 0.5)
-    temp3 = - 0.5 * np.dot(np.dot(x - mean, np.linalg.inv(cov)), x - mean)
+    temp2 = 1 / (np.linalg.det(np.diag(cov)) ** 0.5)
+    temp3 = - 0.5 * np.dot(np.dot(x - mean, np.linalg.inv(np.diag(cov))), x - mean)
     return temp1 * temp2 * np.exp(temp3)
 
 def likelihood(X, mean, cov, pi):
@@ -43,7 +44,7 @@ def likelihood(X, mean, cov, pi):
 
 if __name__ == "__main__":
     # 訓練データをロード
-    data = np.genfromtxt("train-data.mfcc")
+    data = np.genfromtxt(sys.argv[1])
     X = data[:, 0:D]
     X = scale(X)  # データを標準化（各次元が平均0、分散1になるように）
     N = len(X)    # データ数
@@ -52,9 +53,9 @@ if __name__ == "__main__":
 
     # 平均、分散、混合係数を初期化
     mean = np.random.rand(K, D)
-    cov = zeros( (K, D, D) )
-    for k in range(K):
-        np.fill_diagonal(cov[k], 1.0)
+    cov = ones( (K, D) )
+    # for k in range(K):
+    #     np.fill_diagonal(cov[k], 1.0)
     pi = np.random.rand(K)
 
     # 負担率の空配列を用意
@@ -92,11 +93,11 @@ if __name__ == "__main__":
 
             # 共分散を再計算
             # x の各成分は独立であるとみなし，対角行列化を行う
-            cov[k] = np.zeros( (D, D) )
+            cov[k] = np.zeros( D )
             for n in range(N):
                 temp = X[n] - mean[k]
-                cov[k] += gamma[n][k] * matrix(temp).reshape(D, 1) * matrix(temp).reshape(1, D)
-            cov[k] = np.diag(np.diag(cov[k]))
+                cov[k] += gamma[n][k] * np.diag(matrix(temp).reshape(D, 1) * matrix(temp).reshape(1, D))
+            # cov[k] = np.diag(np.diag(cov[k]))
             cov[k] /= Nk
 
             # 混合係数を再計算
