@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>mfcc</title>
+  </head>
+  <body>
+    <input type="file" id="files" name="files[]" />
+    <button class='btn'>run mfcc</button>
+
+    <script type="text/javascript" src="tmp.js"></script>
+    <script>
+      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+      const context = new AudioContext();
+      let audioBuffer = null;
+
+      // for wasm
+      let module;
+
+      function fileHandler() {
+        const file = event.target.files[0];
+
+        if (!file.type.match('audio.wav')) {
+          console.error('please upload audio/wav file');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = ((theFile) => {
+          return (e) => {
+            context.decodeAudioData(e.target.result, (buffer) => {
+              audioBuffer = buffer;
+            }, function() {
+              console.log('error');
+            });
+          };
+        })(file);
+
+        reader.readAsArrayBuffer(file);
+      }
+
+      function _range(start, stop, step = 1) {
+        var index = 0;
+        var length = (stop - start) / step;
+        var result = Array(length);
+
+        while(length) {
+          result[index] = start;
+          start += step;
+          index += 1;
+          length -= 1;
+        }
+
+        return result;
+      }
+
+      function fetchWasm(url) {
+        fetch(url)
+          .then(response => response.arrayBuffer())
+          .then(buffer => new Uint8Array(buffer))
+          .then(binary => {
+            var moduleArgs = {
+              wasmBinary: binary
+            }
+            module = Module(moduleArgs);
+          });
+      }
+
+      function main() {
+        var sampleRate = context.sampleRate;
+        var len = audioBuffer.length;
+        var t = _range(0.0, len / sampleRate, 1 / sampleRate);
+
+        var center = len / 2;
+        var cuttime = 0.04;
+        var wav = audioBuffer.getChannelData(0);
+        var wavdata = wav.slice(center - cuttime/2*sampleRate, center + cuttime/2*sampleRate);
+        var time = t.slice(center - cuttime/2*sampleRate, center + cuttime/2*sampleRate);
+
+        // pre-emphasis filter
+        // var pwavdata = preEmphasis(wavdata, 0.97);
+        // var result = Module.ccall('preEmphasis', 'array', ['array', 'number', 'number'], [Array.from(wavdata), wavdata.length, 0.97]);
+
+        // call c++ function
+        var pointer = module._malloc(wavdata.length * 4)  // Float32Array
+        var offset = pointer / 4;
+        module.HEAPF32.set(wavdata, offset);
+        var v = module.ccall('speechRecognition', 'number', ['number', 'number'], [pointer, wavdata.length]);
+        module._free(pointer);
+
+        console.log(v);
+      }
+
+      module = fetchWasm('tmp.wasm');
+      document.querySelector('.btn').addEventListener('click', main, false);
+      document.getElementById('files').addEventListener('change', fileHandler, false);
+    </script>
+  </body>
+</html>
