@@ -131,7 +131,10 @@ if __name__ == "__main__":
     # ylim(-2.5, 2.5)
     # show()
 
-    # print "mu = "
-    print "mu = np.", repr(mean)
-    print "sigma = np.", repr(cov)
-    print "pi = np.", repr(pi)
+    # print "mu = np.", repr(mean)
+    # print "sigma = np.", repr(cov)
+    # print "pi = np.", repr(pi)
+
+    print "mu <<", ",".join(map(str, map(lambda x: round(x, 6), mean.ravel())))
+    print
+    print "sigma <<", ",".join(map(str, map(lambda x: round(x, 6), cov.ravel())))
