@@ -135,6 +135,9 @@ if __name__ == "__main__":
     # print "sigma = np.", repr(cov)
     # print "pi = np.", repr(pi)
 
-    print "mu <<", ",".join(map(str, map(lambda x: round(x, 6), mean.ravel())))
+    for i in range(len(mean)):
+        print "mu[", i, "] <<", ",".join(map(str, map(lambda x: round(x, 6), mean[i]))), ";"
+
     print
-    print "sigma <<", ",".join(map(str, map(lambda x: round(x, 6), cov.ravel())))
+    for i in range(len(cov)):
+        print "tmp[",i,"] <<",",".join(map(str, map(lambda x: round(x, 6), cov[i]))), ";"
